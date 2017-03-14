@@ -1,8 +1,10 @@
+import functools
 import json
 import os
 import pprint
 import sys
 
+import click
 import gidgethub
 
 from twisted.internet import reactor, defer, task
@@ -11,6 +13,20 @@ from gidgethub.treq import GitHubAPI
 
 MY_TOKEN = os.environ['GHKEY']
 USER_AGENT = "Lukasa"
+
+
+def synchronize(f):
+    """
+    A function decorator that takes an async function and wraps it in a
+    function that can invoke it synchronously using twisted's task.react. This
+    is done to bridge between Twisted and click.
+    """
+    @functools.wraps(f)
+    def inner(*args, **kwargs):
+        d = defer.ensureDeferred(f(*args, **kwargs))
+        task.react(lambda *args: d)
+
+    return inner
 
 
 def protection_data():
@@ -83,23 +99,23 @@ class APIClient:
         self._set_branch_protection(owner, reponame, branch, protection_status)
 
 
-async def async_main():
+@click.group()
+def cli():
+    pass
+
+
+@cli.command()
+@click.argument('repo')
+@click.argument('branch')
+@synchronize
+async def protection(repo, branch):
+    """
+    Query the protection status of a branch.
+    """
     client = APIClient()
-    organisation, reponame = sys.argv[1].split('/', 1)
-    try:
-        branch = sys.argv[2]
-    except IndexError:
-        branch = sys.argv[2]
+    organisation, reponame = repo.split('/', 1)
 
     if await client.branch_requires_review(organisation, reponame, branch):
         print(f"{organisation}/{reponame}@{branch} requires review")
     else:
         print(f"{organisation}/{reponame}@{branch} does not require review")
-
-
-def sync_main(reactor, *args):
-    return defer.ensureDeferred(async_main(*args))
-
-
-def main():
-    task.react(sync_main)

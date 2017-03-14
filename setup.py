@@ -38,10 +38,10 @@ setup(
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: Implementation :: CPython',
     ],
-    install_requires=['twisted[tls]', 'gidgethub', 'treq'],
+    install_requires=['twisted[tls]', 'gidgethub', 'treq', 'click'],
     entry_points={
         'console_scripts': [
-            'branchmgr = branchmgr.main:main',
+            'branchmgr = branchmgr.main:cli',
         ],
     }
 )
