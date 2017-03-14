@@ -1,5 +1,4 @@
 import functools
-import json
 import os
 import pprint
 import sys
@@ -71,10 +70,10 @@ class APIClient:
         Given a branch on a repository, sets the branch protection status to
         status. Status must be a dictionary.
         """
-        encoded_status = json.dumps(status)
         return await self._gh.put(
             f"/repos/{owner}/{reponame}/branches/{branch}/protection",
-            accept=accept_format(version="loki-preview")
+            data=status,
+            accept=accept_format(version="loki-preview"),
         )
 
     async def branch_requires_review(self, owner, reponame, branch):
@@ -96,7 +95,7 @@ class APIClient:
         Protects a given branch.
         """
         protection_status = protection_data()
-        self._set_branch_protection(owner, reponame, branch, protection_status)
+        await self._set_branch_protection(owner, reponame, branch, protection_status)
 
 
 @click.group()
@@ -105,17 +104,33 @@ def cli():
 
 
 @cli.command()
+@click.argument('organisation')
 @click.argument('repo')
 @click.argument('branch')
 @synchronize
-async def protection(repo, branch):
+async def protection(organisation, repo, branch):
     """
     Query the protection status of a branch.
     """
     client = APIClient()
-    organisation, reponame = repo.split('/', 1)
 
-    if await client.branch_requires_review(organisation, reponame, branch):
-        print(f"{organisation}/{reponame}@{branch} requires review")
+    if await client.branch_requires_review(organisation, repo, branch):
+        print(f"{organisation}/{repo}@{branch} requires review")
     else:
-        print(f"{organisation}/{reponame}@{branch} does not require review")
+        print(f"{organisation}/{repo}@{branch} does not require review")
+
+
+@cli.command()
+@click.argument('organisation')
+@click.argument('repo')
+@click.argument('branch')
+@synchronize
+async def protect(organisation, repo, branch):
+    """
+    Protect a branch.
+
+    This command sets a branch as protected using the default settings that
+    branchmgr provides.
+    """
+    client = APIClient()
+    await client.protect_branch(organisation, repo, branch)
