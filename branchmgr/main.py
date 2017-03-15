@@ -123,7 +123,7 @@ async def protection(organisation, repo, branch):
 @cli.command()
 @click.argument('organisation')
 @click.argument('repo')
-@click.argument('branch')
+@click.argument('branch', nargs=-1)
 @synchronize
 async def protect(organisation, repo, branch):
     """
@@ -133,4 +133,9 @@ async def protect(organisation, repo, branch):
     branchmgr provides.
     """
     client = APIClient()
-    await client.protect_branch(organisation, repo, branch)
+    results = []
+    for b in branch:
+        d = defer.ensureDeferred(client.protect_branch(organisation, repo, b))
+        results.append(d)
+
+    await defer.gatherResults(results, consumeErrors=True)
