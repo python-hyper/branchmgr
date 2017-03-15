@@ -21,7 +21,7 @@ setup(
     name='branchmgr',
     version=version,
     description='A tool for managing GitHub branch permissions.',
-    long_description=open('README.rst').read(),
+    long_description=open('README.rst').read() + '\r\n\r\n' + open('HISTORY.rst').read(),
     author='Cory Benfield',
     author_email='cory@lukasa.co.uk',
     url='http://python-hyper.org',
